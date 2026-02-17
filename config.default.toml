@@ -1,6 +1,9 @@
 # Rename this file to config.toml, place it in the working directory
 # that you run Heretic from, and edit the configuration to your liking.
 
+# Random seed for reproducible optimization. If None, no seeding is performed.
+seed = null
+
 # List of PyTorch dtypes to try when loading model tensors.
 # If loading with a dtype fails, the next dtype in the list will be tried.
 dtypes = [
