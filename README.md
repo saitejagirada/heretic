@@ -106,7 +106,7 @@ or any combination of those actions.
 
 ## Reproducibility
 
-Starting with version X.X.X, Heretic includes a **reproducibility package** to help you (and others) recreate models exactly.
+Starting with version 1.2.0, Heretic includes a **reproducibility package** to help you (and others) recreate models exactly.
 
 When you save a model locally or upload it to Hugging Face, Heretic automatically creates a `reproduce/` folder containing:
 
