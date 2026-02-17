@@ -19,7 +19,7 @@ def write_config_toml(settings: Settings, path: Union[str, Path]) -> None:
     Write the configuration used for this run to a TOML file.
     The settings are dumped to a dictionary and then serialized to TOML.
     """
-    config_dict = settings.model_dump(exclude_none=True)  # ← add exclude_none=True
+    config_dict = settings.model_dump(exclude_none=True)
     with open(path, "wb") as f:
         tomli_w.dump(config_dict, f)
 
