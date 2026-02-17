@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from importlib.metadata import version
 from pathlib import Path
 from typing import Any, TypeVar
+import random
+import numpy as np
 
 import questionary
 import torch
@@ -30,6 +32,15 @@ from .config import DatasetSpecification, Settings
 
 print = Console(highlight=False).print
 
+def set_seed(seed: int) -> None:
+    """Set all relevant random seeds for reproducibility."""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    # Optional: force deterministic cuDNN (may reduce performance)
+    # torch.backends.cudnn.deterministic = True
+    # torch.backends.cudnn.benchmark = False
 
 def print_memory_usage():
     def p(label: str, size_in_bytes: int):

@@ -104,6 +104,21 @@ save the model, upload it to Hugging Face, chat with it to test how well it work
 or any combination of those actions.
 
 
+## Reproducibility
+
+Starting with version X.X.X, Heretic includes a **reproducibility package** to help you (and others) recreate models exactly.
+
+When you save a model locally or upload it to Hugging Face, Heretic automatically creates a `reproduce/` folder containing:
+
+- `config.toml` – All settings used for the run (including the random seed if provided).
+- `requirements.txt` – Exact versions of all Python packages in your environment.
+- `environment.txt` – System information (OS, Python, PyTorch, GPU, etc.).
+
+With these files, you can recreate the model by setting up a matching environment and running:
+
+```bash
+heretic --config reproduce/config.toml
+
 ## Research features
 
 In addition to its primary function of removing model censorship, Heretic also

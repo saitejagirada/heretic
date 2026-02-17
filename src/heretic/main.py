@@ -11,7 +11,9 @@ from importlib.metadata import version
 from os.path import commonprefix
 from pathlib import Path
 
+import tempfile
 import huggingface_hub
+from huggingface_hub import upload_file
 import optuna
 import torch
 import torch.nn.functional as F
@@ -40,6 +42,7 @@ from .config import QuantizationMethod, Settings
 from .evaluator import Evaluator
 from .model import AbliterationParameters, Model, get_model_class
 from .utils import (
+    set_seed,
     empty_cache,
     format_duration,
     get_readme_intro,
@@ -51,6 +54,11 @@ from .utils import (
     prompt_path,
     prompt_select,
     prompt_text,
+)
+from .reproduce import (  # type: ignore[import-not-found]
+    write_config_toml,
+    write_requirements_txt,
+    write_environment_txt,
 )
 
 
@@ -159,6 +167,8 @@ def run():
         # The required argument "model" must be provided by the user,
         # either on the command line or in the configuration file.
         settings = Settings()  # ty:ignore[missing-argument]
+        if settings.seed is not None:
+            set_seed(settings.seed)
     except ValidationError as error:
         print(f"[red]Configuration contains [bold]{error.error_count()}[/] errors:[/]")
 
@@ -566,18 +576,21 @@ def run():
             trial.study.stop()
             raise TrialPruned()
 
+    sampler_kwargs = {
+        "n_startup_trials": settings.n_startup_trials,
+        "n_ei_candidates": 128,
+        "multivariate": True,
+    }
+    if settings.seed is not None:
+        sampler_kwargs["seed"] = settings.seed
+
     study = optuna.create_study(
-        sampler=TPESampler(
-            n_startup_trials=settings.n_startup_trials,
-            n_ei_candidates=128,
-            multivariate=True,
-        ),
+        sampler=TPESampler(**sampler_kwargs),
         directions=[StudyDirection.MINIMIZE, StudyDirection.MINIMIZE],
         storage=storage,
         study_name="heretic",
         load_if_exists=True,
     )
-
     study.set_user_attr("settings", settings.model_dump_json())
     study.set_user_attr("finished", False)
 
@@ -768,6 +781,15 @@ def run():
                                 empty_cache()
                                 model.tokenizer.save_pretrained(save_directory)
 
+                            # Write reproducibility files into the same folder
+                            try:
+                                write_config_toml(settings, os.path.join(save_directory, "config.toml"))
+                                write_requirements_txt(os.path.join(save_directory, "requirements.txt"))
+                                write_environment_txt(os.path.join(save_directory, "environment.txt"))
+                                print(f"[green]Reproducibility files saved to {save_directory}[/]")
+                            except Exception as e:
+                                print(f"[yellow]Warning: could not write reproducibility files: {e}[/]")
+
                             print(f"Model saved to [bold]{save_directory}[/].")
 
                         case "Upload the model to Hugging Face":
@@ -864,6 +886,27 @@ def run():
                                     + card.text
                                 )
                                 card.push_to_hub(repo_id, token=token)
+                            # Upload reproducibility files to the "reproduce" folder
+                            try:
+                                with tempfile.TemporaryDirectory() as tmpdir:
+                                    config_path = os.path.join(tmpdir, "config.toml")
+                                    write_config_toml(settings, config_path)
+                                    req_path = os.path.join(tmpdir, "requirements.txt")
+                                    write_requirements_txt(req_path)
+                                    env_path = os.path.join(tmpdir, "environment.txt")
+                                    write_environment_txt(env_path)
+
+                                    for fname in ["config.toml", "requirements.txt", "environment.txt"]:
+                                        local_path = os.path.join(tmpdir, fname)
+                                        upload_file(
+                                            path_or_fileobj=local_path,
+                                            path_in_repo=f"reproduce/{fname}",
+                                            repo_id=repo_id,
+                                            token=token,
+                                        )
+                                print("[green]Reproducibility files uploaded to Hugging Face (folder: reproduce/).[/]")
+                            except Exception as e:
+                                print(f"[yellow]Warning: could not upload reproducibility files: {e}[/]")
 
                             print(f"Model uploaded to [bold]{repo_id}[/].")
 

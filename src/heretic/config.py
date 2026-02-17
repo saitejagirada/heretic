@@ -62,6 +62,11 @@ class DatasetSpecification(BaseModel):
 
 
 class Settings(BaseSettings):
+    seed: int | None = Field(
+        default=None,
+        description="Random seed for reproducible optimization. If None, no seeding is performed."
+    )
+
     model: str = Field(description="Hugging Face model ID, or path to model on disk.")
 
     evaluate_model: str | None = Field(
