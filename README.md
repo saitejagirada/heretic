@@ -118,7 +118,7 @@ With these files, you can recreate the model by setting up a matching environmen
 
 ```bash
 heretic --config reproduce/config.toml
-
+```
 ## Research features
 
 In addition to its primary function of removing model censorship, Heretic also
